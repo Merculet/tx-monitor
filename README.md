@@ -1,15 +1,25 @@
-Fabric Transaction Monitor
+Transaction Monitor for Hyperledger Fabric (https://github.com/hyperledger/fabric) 
 
+Forward Fabric block event to Kafka topic for Fabric client to consume. Actually it follows what Fabric Client SDK suggests (https://github.com/hyperledger/fabric-sdk-node/blob/release-1.1/fabric-client/lib/ChannelEventHub.js)
 
+```
+The events are ephemeral, such that if a registered listener crashed when the event is published, the listener will miss the event. There are several techniques to compensate for missed events due to client crashes:
 
+1. register block event listeners and record the block numbers received, such that when the next block arrives and its number is not the next in sequence, then the application knows exactly which block events have been missed. It can then use [queryBlock]{@link Channel#queryBlock} to get those missed blocks from the target peer or register for events using the startBlock option to resume or replay the events. You may also include an endBlock number if you wish to stop listening.
+
+2. use a message queue to catch all the block events. With many robust message queue implementations available today, you will be guaranteed to not miss an event. A fabric event listener can be written in any programming language. The following implementations can be used as reference to write the necessary glue code between the fabric event stream and a message queue:
+
+...
+
+```
 
 
 ## Contents
 
 * [Motivation](#motivation)
 * [Features](#features)
-* [Product deployment (TODO)](#product-deployment)
-* [Local deployment](#local-deployment)
+* [Development deployment](#development-deployment)
+* [Product deployment](#product-deployment)
 * [Event format](#event-format)
 * [Full Configuration](#full-configuration)
 * [Administration API](#api-for-administration)
@@ -22,87 +32,44 @@ Fabric Transaction Monitor
 
 ## Motivation
 
-* Fabric events are not persisted, that means, clients, for ex. merculet SaaS service, will get events lost if crashed or shutdown for maintenance. So we need event persistency.
+* Fabric events are not persisted, that means, clients, for ex. merculet GaaS service, will get events lost if crashed or during shutdown.
 
-* Fabric events would be duplicated, if the Fabric peer which clients are connecting to changes or is syncing up. So we should remove the burden of dealing with duplication from client, ensure at-least-once or exactly-once event delivering.
+* Fabric events may be duplicated, when the Fabric peer which clients are connecting to changes or is syncing up. So we should remove the burden of dealing with duplication from client, ensure at-least-once or exactly-once event delivering.
 
+* Client application likes message queue rather than connecting to Fabric to receive block events via Fabric client SDK.
 
-
+* Block event is really heavy -- block event payload, including proposal request & response & signature and etc, most part of which are what client application doesn't care, but bandwidth-consuming and CPU-consuming. Client application will benefit from filtering unnecessary block payload, especially for node.js applications (which is single-process-single-thread model even node.js clustering so each node.js process will get a copy of block event!)
 
 
 ## Features
 
 * Subscribe block events from Fabric event hub then forwards them to Kafka, includes:
-    * Persists events in MySQL including payload and block height
-    * Ignores duplicating events, by querying MySQL
-    * For non-duplicating events, delivering them to Kafka topics. The delivery is transactional in MySQL persistence transaction context, so it's repeatable and get simple at-least-once and exactly-once delivery ensurance
+    * Persists events in MySQL including payload and block height. Old events are cleared periodically.
+    * Ignores duplicating events, by querying MySQL.
+    * For non-duplicating events, delivering them to Kafka topics. 
     
 * Automatically catch up to events in latest block, during bootstrapping
 
-* Administration API:
-    * Sync up block event with designated block number
-    * Sync up block events with designated block number range
+* Administrative API:
+    * Sync up block events with designated block number and range
     * Re-catchup to block events in latest block
     
-* Reuse Fabric composer card store to connect to Fabric
-
-* TODO: For invalid transaction incurred by non-malicious chaincode invocation, for ex. concurrent updates on the same key before next block , which will definitely incur MVCC_READ_CONFLICT error, we may retry the transaction if do configured
+* Reuse Fabric composer (https://github.com/hyperledger/composer) card store to connect to Fabric
+  Note: this feature will be removed soon
 
 * TODO: alerting for invalid malicious transaction
 
-## Product deployment (TODO)
 
-* Pull the image (TODO)
+## Development deployment
 
-* Below volumes must be mounted:
-
-  * `${WORKDIR}/home:/root/.composer`
-
-    Note, copy Fabric composer stores cards here. It should be sync-up with what composer-rest-server uses
-
-  * `${WORKDIR}/config:/usr/src/app/config`
-
-  * `${WORKDIR}/logs:/usr/src/app/logs`
-
-* Execute `mysql/create_table.sql`
-
-* Create Kafka topic `merculet_blockevents_composerchannel`, or enable automatic topic creation in Kafka
-
-* Prepare a `config/config.yml`. Its content for minimal configuration is:
-
-  ```yaml
-    Beans:
-      ApiServer: 
-        port: 8000                             # HTTP API port
-
-      BlockEventListener:
-        userName: admin                        # Fabric composer card user name
-        networkName: tutorial-network          # Fabric composer business network name
-      KafkaSender:
-        options:
-          metadata.broker.list: kafka_1:9092   # comma-separated kafka brokers
-      
-    database:
-      host: mysql_1
-      port: 3306
-      user: txm
-      password: txmpwd
-      database: txm
-  ```
-    
-
-
-
-
-## Local development
-  * Follow [Fabric composer tutorial](https://hyperledger.github.io/composer/latest/installing/development-tools) to bootstrap the Fabric 1.1. 
+  * Follow [Fabric composer tutorial](https://hyperledger.github.io/composer/latest/installing/development-tools) to bootstrap a Fabric 1.1 network
   
     Note, following that tutorial, it's enough good until (incudes) running  `./createPeerAdminCard.sh` -- no need `composer-playground`.
   
   * Bootstrap the sample composer business network
   
     ```shell
-      cd tx-monitor/fabric-composer-sample/tutorial-network
+      cd fabric-composer-sample/tutorial-network
       composer archive create -t dir -n .
       composer network install --card PeerAdmin@hlfv1 --archiveFile tutorial-network@0.0.1.bna
       composer network start --networkName tutorial-network --networkVersion 0.0.1 --networkAdmin admin --networkAdminEnrollSecret adminpw --card PeerAdmin@hlfv1 --file networkadmin.card
@@ -124,12 +91,12 @@ Fabric Transaction Monitor
     
     The app will run inside docker container via docker-compose. We need to:
   
-    * In order to use consumer tool outside docker, run `npm install` or `yarn` (preferrable)
+    * (Optional) in order to use consumer tool outside docker, run `npm install` or `yarn` (preferrable)
 
     * Run `dev/setup.sh`.
       Note:
       
-      * what this script does is to copy Fabric composer card from your `${HOME}` folder to ./home and replace localhost with 172.23.0.1, which is the default local docker host IP. This is because the app runs in separated docker container so the composer card should be changed for the app to reuse to connect to Fabric network. It assumes the local docker host IP is 172.23.0.1, feel free to update the IP according to your local environment.
+      * what this script does is to copy Fabric composer card from your `${HOME}` folder to ./home and replace localhost with 172.17.0.1, which is the default local docker host IP. This is because the app runs in separated docker container so the composer card should be changed for the app to reuse to connect to Fabric network. It assumes the local docker host IP is 172.17.0.1, feel free to update the IP according to your local environment.
       
       * For Mac OS, share below folders with docker daemon:
         * The project folder
@@ -155,13 +122,55 @@ Fabric Transaction Monitor
     
     * Run `npm run consume` to subscribe Kafka topic, it will print incoming transaction event on console then
     
-    * Open http://localhost:3000 (by composer-rest-server), issu news transaction
+    * Invoke chaincode to submit Fabric transaction to trigger block event
 
     * Changes code and run `npm run lint` to ensure no Javascript syntax error. And app running in docker container will automatically launch again
     
     * Run `dev/down.sh` to stop app
 
 
+
+
+## Product deployment
+
+* Pull the image (TODO)
+
+* Below volumes must be mounted:
+
+  * `${WORKDIR}/home:/root/.composer`
+
+    Note, copy Fabric composer stores cards here. It should be sync-up with what composer-rest-server uses
+
+  * `${WORKDIR}/config:/usr/src/app/config`
+
+  * `${WORKDIR}/logs:/usr/src/app/logs`
+
+* Execute `mysql/create_table.sql`
+
+* Create Kafka topic `test_mw_tx`, or enable automatic topic creation in Kafka
+
+* Prepare a `config/config.yml`. Its content for minimal configuration is:
+
+  ```yaml
+    Beans:
+      ApiServer: 
+        port: 8000                             # HTTP API port
+
+      BlockEventListener:
+        userName: admin                        # Fabric composer card user name
+        networkName: tutorial-network          # Fabric composer business network name
+      KafkaSender:
+        options:
+          metadata.broker.list: kafka_1:9092   # comma-separated kafka brokers
+      
+    database:
+      host: mysql_1
+      port: 3306
+      user: txm
+      password: txmpwd
+      database: fabric_txmonitor
+  ```
+    
 
 
 
@@ -219,7 +228,7 @@ Fabric Transaction Monitor
         options:
           metadata.broker.list: kafka_1:9092   # comma-separated kafka brokers
         topics:
-          composerchannel: merculet_blockevents_composerchannel   # Kafka topic name for specific Fabric channel. The example is the default with Fabric composer
+          composerchannel: test_mw_tx   # Kafka topic name for specific Fabric channel. The example is the default with Fabric composer
         flushAtOnce: true                      # flush Kafka producer queue immediately, true by default
         flushTimeout: 10000                    # flush time out, 10 seconds by default
         dr_cb: true                            # specifies that we want a delivery-report producer event to be generated
@@ -236,7 +245,7 @@ Fabric Transaction Monitor
       user: txm
       password: txmpwd
       connectTimeout: 10000
-      database: txm
+      database: fabric_txmonitor
       sequelize:
         logging: true
         timestamps: true
@@ -252,7 +261,7 @@ Fabric Transaction Monitor
 
 
 
-## Administration API
+## Administrative API
 
 * Default HTTP port: 8000
 
@@ -308,23 +317,11 @@ Fabric Transaction Monitor
 
 ## TODO List
 
-* Event retry, AKA., re-submitting
+* Re-connect Fabric peer after broken connection
 
-* Leverages MySQL partitioning to persist large set of block events, or, truncate persisted events on scheduled time slot
+* Automatically check and query missing blocks and dispatch them as block events, without re-bootstrap
 
-* Query transaction events (NOT block events)
+* Remove dependency on Fabric composer
 
 * Alerting for invalid malicious transaction
-
-* Improve development tools, for ex. embed the Fabric composer sample network
-
-* Log rotating
-
-
-
-
-
-
-## Build Status
-
 
