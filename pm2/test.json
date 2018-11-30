@@ -1,0 +1,22 @@
+{
+    "apps": [
+        {
+            "name": "test",
+            "script": "./src/App.js",
+            "log_date_format": "YYYY-MM-DD HH:mm Z",
+            "log_file": "./logs/test-all.log",
+            "error_file": "./logs/test-err.log",
+            "out_file": "./logs/test-out.log",
+            "pid_file": "./logs/test.pid",
+            "env": {
+                "NODE_ENV": "test",
+                "LOG_LEVEL": "info"
+            },
+            "max_memory_restart": "1G",
+            "max_restarts": 10,
+            "autorestart": true,
+            "exec_mode": "fork",
+            "instance": 1
+        }
+    ]
+}

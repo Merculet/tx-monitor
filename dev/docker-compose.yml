@@ -1,0 +1,59 @@
+version: '2'
+
+
+services:
+
+
+  app:
+    build:
+      context: ../
+      dockerfile: Dockerfile.dev
+    container_name: txm.app
+    environment:
+      - NODE_ENV=dev
+    depends_on: 
+      - mysql_1
+      - kafka_1
+      - zookeeper_1
+    ports:
+      - 8000:8000
+      - 9029:9029
+    volumes:
+      - ../home/.composer:/root/.composer
+      - ../src:/usr/src/app/src:ro
+      - ../config:/usr/src/app/config:ro
+      - ../logs:/usr/src/app/logs
+    # extra_hosts:
+    #  - "kafka_1:172.23.0.1"
+    #  - "mysql_1:172.23.0.1"
+    #  - "zookeeper_1:172.23.0.1"
+
+
+  mysql_1:
+    build:
+      context: ../mysql
+    container_name: txm.mysql_1
+    volumes:
+      - /data/txm/dev/mysql:/var/lib/mysql
+    ports:
+      - 3306:3306
+
+
+  kafka_1:    
+    image: ches/kafka
+    container_name: txm.kafka_1
+    environment:
+      - ZOOKEEPER_IP=zookeeper_1
+      - KAFKA_ADVERTISED_HOST_NAME=kafka_1
+    depends_on: 
+      - zookeeper_1
+    ports:
+      - 9092:9092
+      # - 7203:7203
+
+
+  zookeeper_1:
+    image: zookeeper:3.4
+    container_name: txm.zookeeper_1
+    ports:
+      - 2181:2181

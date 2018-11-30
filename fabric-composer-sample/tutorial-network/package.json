@@ -1,0 +1,29 @@
+{
+    "name": "tutorial-network",
+    "version": "0.0.1",
+    "description": "test",
+    "scripts": {
+        "prepublish": "mkdirp ./dist && composer archive create --sourceType dir --sourceName . -a ./dist/tutorial-network.bna",
+        "pretest": "npm run lint",
+        "lint": "eslint .",
+        "test": "nyc mocha -t 0 test/*.js && cucumber-js"
+    },
+    "author": "suntoe",
+    "email": "suntoe@189.cn",
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "chai": "latest",
+        "chai-as-promised": "latest",
+        "composer-admin": "0.19.1",
+        "composer-cli": "0.19.1",
+        "composer-client": "0.19.1",
+        "composer-common": "0.19.1",
+        "composer-connector-embedded": "0.19.1",
+        "composer-cucumber-steps": "0.19.1",
+        "cucumber": "2.2.0",
+        "eslint": "latest",
+        "mkdirp": "latest",
+        "mocha": "latest",
+        "nyc": "latest"
+    }
+}

@@ -1,0 +1,11 @@
+.DS_Store
+.git
+.vscode
+node_modules
+build
+doc
+fabric-composer-sample
+spec
+Dockerfile
+README.md
+

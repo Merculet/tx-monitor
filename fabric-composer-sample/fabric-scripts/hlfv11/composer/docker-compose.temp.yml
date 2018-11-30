@@ -1,0 +1,29 @@
+version: '2'
+
+services:
+  
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:x86_64-1.1.0
+    tty: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_LOGGING_LEVEL=DEBUG
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+      - CORE_PEER_LOCALMSPID=Org1MSP
+      #- CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+      - CORE_PEER_MSPCONFIGPATH=/opt/work/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+      - CORE_CHAINCODE_KEEPALIVE=10
+    working_dir: /opt/work
+    command: /bin/bash
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../../../fabcar/chaincode/:/opt/gopath/src/chaincode/
+        - ../../../trade/src/github.com/merculet/:/opt/gopath/src/github.com/merculet/
+        #- ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+        - ./crypto-config:/opt/work/crypto/
+    extra_hosts:
+      - "orderer.example.com:172.17.0.1"
+      - "peer0.org1.example.com:172.17.0.1"

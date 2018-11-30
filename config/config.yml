@@ -1,0 +1,34 @@
+Beans:
+  ApiServer: 
+    port: 8000
+
+  BlockEventListener:
+    userName: admin
+    networkName: tutorial-network
+  KafkaSender:
+    options:
+      metadata.broker.list: kafka_1:9092   # comma separated
+    topics:
+      composerchannel: test_mw_tx
+  KafkaConsumer:
+    options:
+      metadata.broker.list: kafka_1:9092   # comma separated
+    topics:
+      composerchannel: test_mw_tx
+
+database:
+  host: mysql_1
+  port: 3306
+  user: txm
+  password: txmpwd
+  connectTimeout: 10000
+  database: fabric_txmonitor
+  sequelize:
+    logging: true
+    timestamps: true
+    paranoid: true
+    underscored: true
+    freezeTableName: true
+    engine: InnoDBs
+    dialectOptions:
+      charset: utf8mb4

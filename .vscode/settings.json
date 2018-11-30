@@ -1,0 +1,14 @@
+{
+    "files.autoSave": "off",
+    "editor.autoIndent": false,
+    "files.exclude": {
+        "**/build": false
+    },
+    "search.exclude": {
+        "**/build": false
+    },
+    "editor.autoIndent": true,
+    "editor.formatOnSave": true,
+    "eslint.autoFixOnSave": false,
+    "editor.tabSize": 4
+}

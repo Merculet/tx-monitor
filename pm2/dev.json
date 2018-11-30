@@ -1,0 +1,40 @@
+{
+    "apps": [
+        {
+            "name": "dev",
+            "script": "./src/App.js",
+            "node_args": [
+                "--inspect=0.0.0.0:9029"
+            ],
+            "log_date_format": "YYYY-MM-DD HH:mm Z",
+            "log_file": "./logs/dev-all.log",
+            "error_file": "./logs/dev-err.log",
+            "out_file": "./logs/dev-out.log",
+            "pid_file": "./logs/dev.pid",
+            "env": {
+                "NODE_ENV": "dev",
+                "LOG_LEVEL": "debug"
+            },
+            "max_memory_restart": "256M",
+            "max_restarts": 2,
+            "autorestart": true,
+            "exec_mode": "fork",
+            "instance": 1,
+            "watch": [
+                "./src"
+            ],
+            "ignore_watch": [
+                "./.vscode",
+                "./.git",
+                "./build",
+                "./doc",
+                "./logs",
+                "./node_modules",
+                "./test"
+            ],
+            "watch_options": {
+                "followSymlinks": false
+            }
+        }
+    ]
+}

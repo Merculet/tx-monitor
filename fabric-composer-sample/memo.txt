@@ -1,0 +1,29 @@
+1. init
+
+./startFabric.sh
+./createPeerAdminCard.sh
+
+cd tutorial-network
+
+composer archive create -t dir -n .
+
+composer network install --card PeerAdmin@hlfv1 --archiveFile tutorial-network@0.0.1.bna
+
+composer network start --networkName tutorial-network --networkVersion 0.0.1 --networkAdmin admin --networkAdminEnrollSecret adminpw --card PeerAdmin@hlfv1 --file networkadmin.card
+
+composer card import --file networkadmin.card
+
+composer network ping --card admin@tutorial-network
+
+-------------------------
+
+2. composer archive create --sourceType dir --sourceName . -a tutorial-network@0.0.2.bna
+
+composer network install --card PeerAdmin@hlfv1 --archiveFile tutorial-network@0.0.2.bna
+
+composer network upgrade -c PeerAdmin@hlfv1 -n tutorial-network -V 0.0.2
+
+composer network ping -c admin@tutorial-network | grep Business
+
+
+

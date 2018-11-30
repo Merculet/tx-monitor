@@ -1,0 +1,9 @@
+CHANNEL_NOT_FOUND:
+  code: 1001
+  en_US: "cannot found channel with id=%s"
+  zh_CN: "不存在id=%s的channel"
+
+CANNOT_SYNC_MUCH:
+  code: 1002
+  en_US: "sync much is not allowed"
+  zh_CN: "不允许单次同步过多block"
