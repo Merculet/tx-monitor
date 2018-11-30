@@ -58,3 +58,4 @@ typings/
 
 home/.composer
 
+.vscode/sftp*.json
