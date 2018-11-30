@@ -323,5 +323,7 @@ The events are ephemeral, such that if a registered listener crashed when the ev
 
 * Remove dependency on Fabric composer
 
+* Support Fabric v1.2 and v1.3
+
 * Alerting for invalid malicious transaction
 
